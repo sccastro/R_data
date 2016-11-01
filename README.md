@@ -1,4 +1,4 @@
-# hello-world
-Practicing using GitHub
+# R_data
+Keeping Files Consistent Across Computers
 
-My name is Spencer Castro and I research attention and distraction at the University of Utah. I've used python with PyCharm and Homebrew to manipulate my data in the past, but my current installation of Homebrew is having a really hard time with life. I also set up an Rstudio and Shiny server to create visualizations of the data that we collect in the Applied Cognition Lab, mostly on distracted driving.
+This repository is used to manipulate data on my work computer and laptop so that I always have my files with me. I will attempt to have multiple project folders for data in R within this repository.
