@@ -1,0 +1,20 @@
+{
+    "collab_server" : "",
+    "contents" : "# Clear/setup workspace ---------------------------------------------------\nmy.axis.font<-theme(axis.title.x = element_text(size=18), axis.title.y = element_text(size=18),\n                    axis.text.x = element_text(size=18), axis.text.y = element_text(size=18), \n                    plot.title=element_text(size=18,face=\"bold\"),\n                    legend.title=element_text(size=14),legend.text=element_text(size=14))\n\nrm(list=ls()); par(mfrow = c(1,1))\n\nlibrary(dplyr)\nlibrary(ggplot2)\n#Other users of this script will have to set their own working directory\nsetwd(\"C:/Users/u1010240/Desktop/Studies/R_data/MitchHonors\")\n\n\n# Get all files and apply functions to them -------------------------------\n\n#Get filenames\nfiles <- list.files(path=\"data\", pattern=\"*.csv\", full.names=T, recursive=FALSE)\n\n#Get Subject IDs and conditions\n# subids <- regmatches(files, regexpr(\"\\\\d[a-z]?\", files))\n# condition <- regmatches(subids, regexpr(\"[gmpw]\", subids))\n\n#List of files with all data\ndatalist = lapply(files, function(x){read.csv(file=x,header=T)})\n\n#merge all of the files together\ncombined <- do.call(rbind, datalist)\n\n\n#rename the sub column subid (matches a function sub())\ncombined <- rename(combined, subid = sub)\n# Clean Data --------------------------------------------------------------\n\n#create a new column that finds the letter in the subid column and creates the condition.\ncombined$condition <- factor(ifelse(grepl(\"p\", combined$subid, ignore.case = T), \"practice\", \n                  ifelse(grepl(\"w\", combined$subid, ignore.case = T), \"white\", \n                         ifelse(grepl(\"g\", combined$subid, ignore.case = T), \"green\",\"mixed\"))))\n\n#Select the columns we want, clean out NA's\nclean <- combined %>%\n  select(subid,condition,targcol,corr,rt1,rt2) %>%\n  na.omit() %>%\n  arrange(!desc(subid))\n\n#Get the letters out of subid\nclean$subid <- factor(gsub('[a-z]+', '', clean$subid))\n\n\n\n# Descriptive Stats -------------------------------------------------------\n\n#Percentage correct by group\nacc.mean <- clean %>%\n  group_by(condition) %>%\n  summarise(perc_corr = mean(corr)*100)\n\n#RT\n\n\naccplot <- ggplot(acc.mean, aes(x = as.factor(condition), y=perc_corr, colour = perc_corr)) +\n  geom_point(size=5) + ylim(90,100) + theme_minimal() +  my.axis.font +\n  xlab(\"Condition\")\naccplot\n\nrtplot <- ggplot(clean, aes(x = as.factor(condition), y=rt1, colour = condition)) + \n  geom_boxplot() + ylim(0,1300) + theme_minimal() + my.axis.font + xlab(\"Condition\") \n# + guides(colour=FALSE) +\n# scale_x_discrete(breaks = 1:2, labels = c(\"Green\",\"White\"))\n#can add target color --(colour = targcol, group=targcol)\nrtplot\n",
+    "created" : 1478034497781.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "804823038",
+    "id" : "25F25BCD",
+    "lastKnownWriteTime" : 1478041749,
+    "last_content_update" : 1478041749698,
+    "path" : "~/Documents/R_data/MitchHonors/MitchCleanData11_1.R",
+    "project_path" : "MitchCleanData11_1.R",
+    "properties" : {
+    },
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}
