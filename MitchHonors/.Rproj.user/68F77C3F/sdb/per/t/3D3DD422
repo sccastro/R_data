@@ -1,0 +1,21 @@
+{
+    "collab_server" : "",
+    "contents" : "# Clear/setup workspace ---------------------------------------------------\n\nrm(list=ls()); par(mfrow = c(1,1))\ngetwd()\nlibrary(dplyr)\n#Other users of this script will have to set their own working directory\nsetwd(\"C:/Users/u1010240/Desktop/Studies/R_data/MitchHonors\")\n\n\n# Get all files and apply functions to them -------------------------------\n\n#Get filenames\nfiles <- list.files(path=\"data\", pattern=\"*.csv\", full.names=T, recursive=FALSE)\n#Get Subject IDs and conditions\nsubids <- regmatches(files, regexpr(\"\\\\d[a-z]?\", files))\ncondition <- regmatches(subids, regexpr(\"[gmpw]\", subids))\n\n#List of files with all data\ndatalist = lapply(files, function(x){read.csv(file=x,header=T)})\n\n#merge all of the files together\ncombined <- do.call(rbind, datalist)\nsummary(combined)\n\n\n\n# Clean Data --------------------------------------------------------------\n\n\n",
+    "created" : 1478022586890.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "51922037",
+    "id" : "3D3DD422",
+    "lastKnownWriteTime" : 1478032870,
+    "last_content_update" : 1478032870650,
+    "path" : "C:/Users/u1010240/Desktop/Studies/R_data/MitchHonors/MitchCleanData11_1.R",
+    "project_path" : "MitchCleanData11_1.R",
+    "properties" : {
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}
