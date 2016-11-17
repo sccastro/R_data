@@ -1,0 +1,8 @@
+UniqueID, BlockID, GroupID, ConfigName, Response Time, LED Red (1=Red 0=Green), pressCount, LEDOnTime, InterStimulusDuration, PCStartTime, PCEndTime, isPractice, keyDown, Date
+1,0,defaultGroupID,Desert Study,-1,1,0,1000,3554,18:16:28,18:16:32,1,,4/16/2016
+2,0,defaultGroupID,Desert Study,-1,1,0,1000,3911,18:16:32,18:16:37,1,,4/16/2016
+3,0,defaultGroupID,Desert Study,-1,1,0,1000,4048,18:16:37,18:16:42,1,,4/16/2016
+4,0,defaultGroupID,Desert Study,-1,1,0,1000,4309,18:16:42,18:16:47,1,,4/16/2016
+5,0,defaultGroupID,Desert Study,-1,1,0,1000,4215,18:16:47,18:16:53,1,,4/16/2016
+6,0,defaultGroupID,Desert Study,-1,1,0,1000,4097,18:16:53,18:16:58,1,,4/16/2016
+7,1,defaultGroupID,Desert Study,-1,1,0,1000,4620,18:17:10,18:17:15,0,,4/16/2016
