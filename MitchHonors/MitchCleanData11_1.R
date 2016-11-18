@@ -1,10 +1,11 @@
 # Clear/setup workspace ---------------------------------------------------
+rm(list=ls()); par(mfrow = c(1,1))
+
 my.axis.font<-theme(axis.title.x = element_text(size=18), axis.title.y = element_text(size=18),
                     axis.text.x = element_text(size=18), axis.text.y = element_text(size=18), 
                     plot.title=element_text(size=18,face="bold"),
                     legend.title=element_text(size=14),legend.text=element_text(size=14))
 
-rm(list=ls()); par(mfrow = c(1,1))
 
 library(dplyr)
 library(ggplot2)
