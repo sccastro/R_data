@@ -5,7 +5,10 @@ require(plyr)
 require(dplyr)
 require(lme4)
 require(ggplot2)
+<<<<<<< HEAD
 require(TeachingDemos)
+=======
+>>>>>>> origin/master
 
 # My plot config ----------------------------------------------------------
 
@@ -75,7 +78,7 @@ CleanData <- function(combined.data) {
 ##   conf.interval: the percent range of the confidence interval (default is 95%)
 summarySE <- function(data=NULL, measurevar, groupvars=NULL, na.rm=FALSE,
                       conf.interval=.95, .drop=TRUE) {
-  require(plyr)
+
   
   # New version of length which can handle NA's: if na.rm==T, don't count them
   length2 <- function (x, na.rm=FALSE) {
@@ -211,3 +214,20 @@ normDataWithin <- function(data=NULL, idvar, measurevar, betweenvars=NULL,
   return(data)
 }
 
+# Calculate D' -------------------------------------------------------
+
+dprime = function(data) {
+  yes         = subset(data, resp=="Y")
+  no          = subset(data, resp=="N")
+  hit         = subset(data, resp=="Y" & acc == 1)
+  falsealarm  = subset(data, resp=="Y" & acc == 0)
+  
+  Hrate = xtabs(~subject, data=hit)/xtabs(~subject, data=yes)
+  Frate = xtabs(~subject, data=falsealarm)/xtabs(~subject, data=no)
+  dprime_score = qnorm(Hrate) - qnorm(Frate)
+  
+  return(dprime_score)
+}
+
+
+xtab
