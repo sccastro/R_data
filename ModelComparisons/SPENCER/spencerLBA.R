@@ -52,7 +52,7 @@ lba <- spen
 rm(spen)
 
 lba.p <- summary.rc(lba,showbest=1,type="aic",output="pars")
-summary.rc(lba,showbest=1,type="bic",top.summary=FALSE)
+summary.rc(lba,showbest=1,type="aic",top.summary=FALSE)
 
 aiclba <- "B~F & A~1 & v~S*C & sv~S*C & ter~1 & pc~1"
 
@@ -67,6 +67,8 @@ btype="within"; bars=95
 tmp <- lba; mnam <- "LBA"
 
 facs=c("F", "S")
+
+require(ggplot2)
 
 plot.rc(tmp,measure="accuracy",plot.subjects=F,factors=facs, xlab="Load",
         plot.model=T,model.name=mnam,bar.type=btype,bars=bars)
@@ -86,3 +88,6 @@ round(tapply(lba.aicp$B$y, lba.aicp$B$F, mean), 2)
 # Drift ---------------------------------------------------------------
 plotpar.rc(lba,bestlba,"v",plot.subjects=F,bars="se",
            xlab="Match Factor",factors=c("S", "C"), ylab="Mean Drift Rate (v)")
+
+round(tapply(lba.aicp$v$y, lba.aicp$v$S, mean), 2)
+round(tapply(lba.aicp$v$y, lba.aicp$v$C, mean), 2)
