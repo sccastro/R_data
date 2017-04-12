@@ -1,0 +1,9 @@
+sub,trial,time,numtargs,size,targchar,targcol,stim,resp,corr,rt1,rt2
+2211,1,4899,1,10,O,green,OQoCoCQCoQ,1,1,1054,475
+2211,2,7290,1,10,O,green,OCoQoCQoCQ,1,1,829,377
+2211,3,9405,0,10,O,green,oQCQoCoQCQ,0,1,1083,514
+2211,4,11887,1,10,O,white,OoCQCoQCoQ,1,1,1657,341
+2211,5,14794,0,10,O,green,CQoCoQoCQC,0,1,1312,488
+2211,6,17464,0,10,O,green,CoQCoQoQCo,0,1,993,479
+2211,7,19784,1,10,O,white,OQCoQCoCQo,1,1,851,319
+2211,8,21847,0,10,O,white,oCQCQoCQoC,0,1,3350,725

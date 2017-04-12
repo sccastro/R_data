@@ -1,0 +1,4 @@
+sub,trial,time,numtargs,size,targchar,targcol,stim,resp,corr,rt1,rt2
+2131,1,17426,1,10,O,white,OCQoQoCQCo,1,1,14458,5850
+2131,2,38621,1,10,O,green,OoCQoQCQoC,1,1,5463,326
+2131,3,45366,0,10,O,white,QCoQoCQCoQ,0,1,7551,2167

@@ -1,0 +1,218 @@
+---
+title: "Nature and DRT Report"
+author: '[Spencer Castro](http://spencercastro.com)'
+date: "11/18/2016"
+output:
+  pdf_document:
+    toc: yes
+    latex_engine: xelatex
+  html_document:
+    code_folding: hide
+    fig_height: 4
+    highlight: pygments
+    theme: yeti
+    toc: yes
+    toc_float: yes
+sansfont: Calibri Light
+---
+
+## Examining Accuracy and Reaction Time in a Go-NoGo Detection Response Task
+
+27 Participants responded to a vibro-tactile patch attached to their right hand while ingoring a vibro-tactile patch on their left hand. Participants responded by pressing a button in their left hand. These participants repeated this task 3 times:
+<ul>
+<li>Indoors</li>
+<li>Outdoors, during exposure to Nature</li>
+<li>Indoors, Post exposure to Nature</li>
+</ul>
+
+We analysed the Accuracy and Reaction Time in responding to the Go-NoGo task as a measure of attention capacity during these three periods. We hypothesized that exposure to Nature and deprivation from technology may increase performance in this simple task and furthermore, should correlate with EEG measurements in oscillations of the midline frontal nodes at the Theta frequency.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(fig.align = 'center', warning = FALSE, 
+                      message = FALSE, results = 'hide')
+```
+
+
+
+```{r Load Datasets}
+source("Load_Data.R") #Get the functions for loading the data
+combined.data <- CombineData() #Save output of function for combining csv files
+clean.data <- CleanData(combined.data) #Save output of function for cleaning data
+
+clean <- clean.data %>%
+  filter(isPractice == "no") %>%
+  group_by(subid,condition,r1g0) %>%
+  dplyr::mutate(falsealarm = ifelse(pressCount == 1 & r1g0 == "r", 1,0)) %>%
+  dplyr::mutate(miss = ifelse(pressCount == 0 & r1g0 == "g", 1,0)) %>%
+  dplyr::mutate(totalerrors = miss + falsealarm) %>%
+  dplyr::mutate(correct = ifelse(totalerrors == 0, 1,0))
+
+cleanrt <- clean %>%
+  filter(rt > 100 & rt < 2000)
+
+#summary of Signal, Noise, Hits and False Alarms
+aprime <- clean %>%
+  select(subid,condition,r1g0,correct,falsealarm)%>%
+  group_by(subid,condition,r1g0) %>%
+  dplyr::summarise(hitrate = mean(correct), farate = mean(falsealarm)) #Get summaries of hitrate and false alarm rate
+hitrate1 <- aprime[c(TRUE,FALSE),]$hitrate #Get just the hits to green light
+farate1 <- aprime[aprime$r1g0 == "r",]  #Get just the false alarms to red light (next line too)
+farate2 <- farate1$farate 
+aprime1 <- aprime %>% 
+  group_by(subid,condition) %>%
+  summarise(hitrate = mean(hitrate),farate = mean(farate)) #Prepare a dataframe for hitrate1 and farate1
+aprime1$hitrate <- hitrate1 #update the hitrate column wit correct hitrates
+aprime1$farate <- farate2 #update the false alarm column with correct false alarm rates
+aprime2 <- Getaprime(aprime1) #Run the function Getaprime to append A' scores to the dataframe
+aprimeclean <- aprime2 %>%
+  filter(aprimescore > .5) #Get rid of the bad participants
+
+# Get some summaries with Error Bars -----------------------------------------------------
+#Accuracy by light and condition
+datac <- summarySEwithin(clean, measurevar ="correct", withinvars = c("condition","r1g0"), idvar = "subid")
+#Accuracy by condition
+datac1 <- summarySEwithin(clean, measurevar ="correct", withinvars = c("condition"), idvar = "subid")
+#A' Score by condition
+dataca <- summarySE(aprimeclean, measurevar = "aprimescore", groupvars = "condition", na.rm = TRUE)
+#Reaction time be correct response and condition
+datart <- summarySEwithin(cleanrt, measurevar ="rt", withinvars = c("condition","correct"), idvar = "subid")
+```
+
+##Accuracy Plots
+
+Participants had four possible responses in the DRT Go-NoGo task:
+<ol>
+<li>Correct Response to the Green Vibro-tactile device (Hit)</li>
+<li>No Response to the Green Vibro-Tactile Device (Miss)</li>
+<li>Incorrect Response to the Red Vibro-Tactile Device (False Alarm)</li>
+<li>No Response to the Red Vibro-Tactile Device (Correct Rejection)</li>
+</ol>
+
+Below we have graphed the responses for the task by vibro-tactile device (R/G), by Condition, and the A' score by condition. Error bars are 95% confidence intervals. 
+
+```{r Accuracy Plot 1, fig.cap=figcap1}
+figcap1 <- "Fig. 1. The percent of correct responses to the red vibro-tactile device, (Correct Rejections) and the green vibro-tactile device (Hits)."
+
+accplot2 <- ggplot(datac, aes(x = condition, y=correct, colour = r1g0, group = r1g0)) +
+  geom_point(stat = "identity") + 
+  geom_line() +
+  theme_classic() +  my.axis.font + xlab("Condition") + coord_cartesian(ylim=c(.7,1)) +
+  geom_errorbar(width = .1, 
+                aes(ymin=correct-ci, ymax=correct+ci)) + xlab("") +
+  ggtitle("Percent \n Correct Responses in a \n Go-NoGo DRT Task \n") + 
+  scale_color_brewer(type = "qual", palette = 2,direction = 1) +
+  scale_x_discrete(labels = c("University (Pre)", "In the Desert", "University (Post)"))
+  
+accplot2
+
+```
+
+```{r Accuracy Plot 2, fig.cap=figcap2}
+figcap2 <- "Fig. 2. The percent of correct responses (either correct rejections or hits) to the Go-NoGo task."
+
+accplot3 <- ggplot(datac1, aes(x = condition, y=correct, group = 1)) + 
+  geom_line() +
+  geom_point(stat = "identity") +
+  theme_classic() +  my.axis.font + xlab("Condition") + coord_cartesian(ylim=c(.9,1)) +
+  geom_errorbar(width = .1, 
+                aes(ymin=correct-ci, ymax=correct+ci)) + xlab("") +
+  ggtitle("Percent \n Correct Responses in a \n Go-NoGo DRT Task \n") + 
+  scale_color_brewer(type = "qual", palette = 2,direction = 1) +
+  scale_x_discrete(labels = c("University (Pre)", "In the Desert", "University (Post)"))
+accplot3
+```
+
+```{r Accuracy Plot 3, fig.cap=figcap3}
+figcap3 <- "Fig. 3. The average A' score for participants across the three conditions of pretest, test, and posttest."
+
+accplot5 <- ggplot(dataca, aes(x = condition, y=aprimescore, group = 1)) + 
+  geom_line() +
+  geom_point(stat = "identity") + theme_minimal() +
+  my.axis.font + ggtitle("A\' \n by Condition") +
+  geom_errorbar(position=position_dodge(.9), width = .25, 
+                aes(ymin=aprimescore-ci, ymax=aprimescore+ci))
+accplot5
+```
+##Statistical Analysis of Accuracy
+
+Here we used a linear mixed model fit by Restricted Maximum Likelihood (REML), which bases estimates of likelihood from a transformed dataset so that nuisance parameters have no effect (Harville, 1977).
+
+```{r Accuracy Linear Mixed Model, results = "show"}
+# Simple Statistics -------------------------------------------------------
+require(lmerTest)
+
+#Errors first
+clean.mean <- clean %>%
+  group_by(subid,condition) %>%
+  dplyr::summarise(perc_correct = mean(correct)*100) %>%
+  filter(perc_correct > 50)
+
+acc.lm <- with(as.data.frame(clean.mean), lmer(perc_correct ~ condition  + (1|subid)),na.omit()) 
+
+summary(acc.lm)
+
+with(as.data.frame(clean.mean), lmer(perc_correct ~ condition  + (1|subid)),na.omit()) %>% anova()
+
+```
+In summary, there are no significant effects of condition upon the percent of correct responses (either correct rejections or hits).
+
+
+##Reaction Time Plots
+
+The following plots show Reaction Times for all <b>Hits</b> and <b>False Alarms</b>. The proportion of Hits to False Alarms is very large, which is reflected in the 95% confidence interval error bars.
+
+```{r Reaction Time 1, fig.cap=figcap4}
+#Reaction Time
+figcap4 <- "Fig. 4. The average RT for participants by condition, split by Hits <b>(1)</b> and false alarms <b>(0)</b>."
+rtplot2 <- ggplot(datart, aes(x = as.factor(condition), 
+                              y=rt, color = as.factor(correct), group = as.factor(correct))) +
+  geom_point(stat = "identity", aes(color = as.factor(correct))) +
+  geom_line() +
+  ylim(0,1000) + theme_minimal() +  my.axis.font +
+  xlab("Condition") + scale_fill_brewer(type = "qual", palette = 2,direction = 1) +
+  geom_errorbar(width = .25, 
+                aes(ymin=rt-ci, ymax=rt+ci)) + 
+  ggtitle("Reaction Time \n by Condition in a \n Go-NoGo DRT Task \n")
+rtplot2
+
+
+```
+
+```{r Reaction Time 2, fig.cap=figcap5}
+figcap5 <- "Fig. 5. The average RT for participants in Hits <b>(1)</b> and False Alarms <b>(0)</b> across the conditions of pretest, test, and posttest."
+rtplot3 <- ggplot(datart, aes(x = as.factor(correct), y=rt, 
+                              color = as.factor(condition),
+                              group = as.factor(condition))) +
+  geom_point(stat = "identity", 
+             aes(color = as.factor(condition))) +
+  geom_line() +
+  ylim(0,1000) + theme_minimal() +  my.axis.font +
+  xlab("Correct") + scale_fill_brewer(type = "qual", palette = 2,direction = 1) +
+  geom_errorbar(width = .25, 
+                aes(ymin=rt-ci, ymax=rt+ci)) + 
+  ggtitle("Reaction Time \n by Condition in a \n Go-NoGo DRT Task \n")
+rtplot3
+
+
+```
+
+##Statistical Analysis of Reaction Time
+
+Here we used a linear mixed model fit by Restricted Maximum Likelihood (REML), which bases estimates of likelihood from a transformed dataset so that nuisance parameters have no effect (Harville, 1977).
+
+```{r Reaction Time Stats 1, results="show"}
+rt.lm <- with(as.data.frame(clean), lmer(rt ~ condition * correct  + (1|subid)),na.omit()) 
+
+summary(rt.lm)
+
+```
+
+Here we have a significant effect of the posttest being significantly faster than the pretest and a large effect of interaction between the RT of correct responses (Hits) and incorrect responses (False Alarms). 
+
+```{r Reaction Time Stats 2, results="show"}
+
+with(as.data.frame(clean), lmer(rt ~ condition * correct  + (1|subid)),na.omit()) %>% anova()
+
+```
+
+When we analyze the linear mixed model using an analysis of variance we find significant effects of condition, correctness of response, and a condition by correct response interaction.

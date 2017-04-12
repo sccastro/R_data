@@ -1,0 +1,347 @@
+---
+title: "Data Summary for Single DRT task"
+author: '[Spencer Castro](http://spencercastro.com)'
+date: "2/6/2017"
+output:
+  pdf_document:
+    toc: yes
+  html_document:
+    code_folding: hide
+    fig_height: 4
+    highlight: pygments
+    theme: yeti
+    toc: yes
+    toc_float: yes
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(fig.align = 'center', warning = FALSE, 
+                      message = FALSE, results = 'hide', fig.path = "images/")
+require(lubridate)
+require(tidyverse)
+require(RColorBrewer)
+require(car)
+setwd("~/Documents/R_data/MitchHonors")
+
+rm(list=ls()) #Clear wd()
+source("Load_Data.R") #Load the functions
+load(file = "CleanData.Rdata") #Load the data
+```
+
+#DRT Simple Task
+
+1.a This is a plot for the accuracy of the visual search task (The proportion of trials in which a target was selected compared to a distractor.)
+
+```{r Visual Search Task Accuracy, results='show'}
+###Colors for plots
+####Create a custom color scale
+myColors <- c("forestgreen","grey50")
+names(myColors) <- levels(clean$targcol)
+colScale <- scale_colour_manual(name = "targcol",values = myColors)
+
+acc.mean <- cleanac %>%
+  group_by(condition, targcol) %>%
+  summarise(perc_corr = mean(corr)*100)
+
+
+datac <- summarySEwithin(cleanac, measurevar ="corr", withinvars = c("condition","targcol"), idvar = "subid")
+
+accplot <- ggplot(datac, aes(x = condition, y=corr, color = targcol, group = targcol)) +
+  geom_point() + theme_minimal() + geom_point() +
+  my.axis.font + geom_errorbar(width = .25,
+                               aes(ymin=corr-ci, ymax=corr+ci)) +
+  xlab("Condition") + coord_cartesian(ylim = c(.95, 1.1)) +
+  scale_fill_manual(values=myColors) + ylab("Percent Correct (%)") +
+  ggtitle("Accuracy of the \n Visual Search Task \n by Condition")
+accplot
+
+vis.ac <- lmer(corr~condition*targcol+(1|subid),data=cleanac)
+Anova(vis.ac)
+
+```
+
+The ANOVA here shows that the conditions of blocked and mixed difficulties impacted the accuracy. The difficulty of the target task itself also effected accuracy. However, there was no target color by condition interaction. Almost all groups were at ceiling for accuracy, meaning very few errors were produced, and the effect is very small.
+
+ condition | target color | percent correct |  ci
+ ----------|---------|------|------------
+     green |  green  |0.9953|  0.0018
+     mixed |  green  |0.9993|  0.0010
+     mixed |  white  |0.9948|  0.0027
+     white |  white  |0.9935|  0.0021
+
+
+```{r Visual Search Task Reaction Time, results="show"}
+
+datrt <- summarySEwithin(clean, measurevar ="rt1", withinvars = c("condition","targcol"), idvar = "subid")
+
+rtplot <- ggplot(datrt, aes(x = condition, y=rt1, fill = targcol)) +
+  geom_bar(stat = "identity", position = "dodge") + theme_minimal() +
+  my.axis.font + geom_errorbar(position=position_dodge(.9), width = .25,
+                               aes(ymin=rt1-ci, ymax=rt1+ci)) +
+  xlab("Condition") + coord_cartesian(ylim = c(1000, 3000)) +
+  scale_fill_manual(values=myColors) + ylab("Reaction Time (ms)") +
+  ggtitle("Reaction Times of the \n Visual Search Task \n by Condition")
+rtplot
+
+vis.ac <- lmer(rt1~condition*targcol*corr+(1|subid),data=clean)
+Anova(vis.ac)
+```
+Reaction time was affected by whether the targets were blocked or mixed (condition), the target color was different, or whether the answer was correct or not. There were no interaction effects.
+
+### combined steering with drt
+```{r drt and steering, results="show"}
+drt.clean$condition <- recode_factor(drt.clean$condition, 
+                                     "1" = "practice","2" = "green","3" ="white", "4" = "mixed",
+                                     .default = "NA")
+drt.clean$response <- recode_factor(drt.clean$response, "1" = "correct", "-1" = "incorrect")
+
+drtrt <- summarySEwithin(drt.clean, measurevar ="rt", withinvars = c("condition","response"), idvar = "subid")
+
+drtrt <- drtrt %>% filter(condition != "practice")
+
+rtplot <- ggplot(drtrt, aes(x = condition, y=rt, fill = response)) +
+  geom_bar(stat = "identity", position = "dodge") + theme_minimal() +
+  my.axis.font + geom_errorbar(position=position_dodge(.9), width = .25,
+                               aes(ymin=rt-ci, ymax=rt+ci)) +
+  xlab("Condition") + coord_cartesian(ylim = c(200, 700)) + ylab("Reaction Time (ms)") +
+  ggtitle("Reaction Times of the \n DRT \n by Condition and Response")
+rtplot
+
+drt.rt <- lmer(rt~condition*response*mean.dev+(1|subid),data=drt.clean)
+Anova(drt.rt)
+
+```
+
+condition| response |rt      |    ci
+ ------|----------|----------|----------
+ green |  correct | 567.1133 | 10.026026
+ green |incorrect |  546.7265|  31.821575
+ mixed |  correct | 573.4649 |  9.423457
+ mixed |incorrect | 541.2416 |  32.182574
+ white | correct  |589.9847  |  9.402508
+ white |incorrect | 517.4245 |  33.214033
+
+Incorrect responses (where the participant responded to the light more than once) were faster on average than correct responses. The difficulty also affected reaction times. In addition, there was a difficulty (condition) by steering deviation interaction. We can see the effect of difficulty on steering below.
+
+```{r drt and steering 2}
+
+drtrt <- summarySEwithin(drt.clean, measurevar ="mean.dev", withinvars = c("condition"), idvar = "subid")
+
+drtrt <- drtrt %>% filter(condition != "practice")
+
+rtplot <- ggplot(drtrt, aes(x = condition, y=mean.dev)) +
+  geom_bar(stat = "identity", position = "dodge") + theme_minimal() +
+  my.axis.font + geom_errorbar(position=position_dodge(.9), width = .25,
+                               aes(ymin=mean.dev-ci, ymax=mean.dev+ci)) +
+  xlab("Condition") + coord_cartesian(ylim = c(0, 10)) + ylab("Degrees Deviation") +
+  ggtitle("Mean Steering Deviation")
+rtplot
+
+drt.rt <- lmer(mean.dev~condition+(1|subid),data=drt.clean)
+Anova(drt.rt)
+```
+
+condition| mean.dev|ci
+---------|---------|-----
+green | 5.687147 | 0.059
+mixed | 7.083614 | 0.137
+white | 6.167213 | 0.057
+
+Alone, the effects of the difficulty of the visual task changed the steering deviation so that (1) at the easiest difficulty, steering was best (2) at the highest difficulty, steering was slightly worse, but (3) when participants didn't know whether to expect easy or difficult trials, steering was the worst. Interestingly, the DRT was not sensitive to this phenomenon.
+
+
+#DRT Choice Task Data
+
+```{r setup2, include=FALSE}
+
+rm(list=ls()) #Clear wd()
+source("Load_Data.R") #Load the functions
+load("~/Documents/R_data/MitchHonors/MitchChoice/cleanchoiceData.Rdata")
+drt.clean.choice <- drt.clean.choice %>%
+  dplyr::filter(subid != "03")
+```
+
+1.a This is a plot for the accuracy of the visual search task (The proportion of trials in which a target was selected compared to a distractor.)
+
+```{r Visual Search Task Choice Accuracy, results='show'}
+###Colors for plots
+####Create a custom color scale
+myColors <- c("forestgreen","grey50")
+names(myColors) <- levels(clean.choice$targcol)
+colScale <- scale_colour_manual(name = "targcol",values = myColors)
+clean.choice <- clean.choice %>%
+  dplyr::filter(subid != "01", subid != "02", subid != "03")
+clean.choiceac <- clean.choiceac %>%
+  dplyr::filter(subid != "01", subid != "02", subid != "03")
+
+acc.mean <- clean.choiceac %>%
+  group_by(condition, targcol) %>%
+  summarise(perc_corr = mean(corr)*100)
+
+
+datac <- summarySEwithin(clean.choiceac, measurevar ="corr", withinvars = c("condition","targcol"), idvar = "subid")
+
+accplot <- ggplot(datac, aes(x = condition, y=corr, fill = targcol)) +
+  geom_bar(stat = "identity", position = "dodge") + theme_minimal() +
+  my.axis.font + geom_errorbar(position=position_dodge(.9), width = .25,
+                               aes(ymin=corr-ci, ymax=corr+ci)) +
+  xlab("Condition") + coord_cartesian(ylim = c(.9, 1)) +
+  scale_fill_manual(values=myColors) + ylab("Percent Correct (%)") +
+  ggtitle("Accuracy of the \n Visual Search Task \n by Condition")
+accplot
+
+vis.ac <- lmer(corr~condition*targcol+(1|subid),data=clean.choiceac)
+Anova(vis.ac)
+```
+
+The ANOVA here shows that the conditions of blocked and mixed difficulties did not impact the accuracy. We have a significant effect of the target color, and it didn't matter whether the targets were blocked or mixed.
+
+ condition | target color | percent correct |  ci
+ ----------|---------|------|------------
+     green |  green  |0.9932|  0.0030
+     mixed |  green  |1.0000|  0.0007
+     mixed |  white  |0.9875|  0.0059
+     white |  white  |0.9897|  0.0038
+
+```{r Visual Search Task Choice Reaction Time, results="show"}
+
+datrt <- summarySEwithin(clean.choice, measurevar ="rt1", withinvars = c("condition","targcol"), idvar = "subid")
+
+rtplot <- ggplot(datrt, aes(x = condition, y=rt1, fill = targcol)) +
+  geom_bar(stat = "identity", position = "dodge") + theme_minimal() +
+  my.axis.font + geom_errorbar(position=position_dodge(.9), width = .25,
+                               aes(ymin=rt1-ci, ymax=rt1+ci)) +
+  xlab("Condition") + coord_cartesian(ylim = c(1000, 3500)) +
+  scale_fill_manual(values=myColors) + ylab("Reaction Time (ms)") +
+  ggtitle("Reaction Times of the \n Visual Search Task \n by Condition")
+rtplot
+
+vis.ac <- lmer(rt1~condition*targcol*corr+(1|subid),data=clean.choice)
+Anova(vis.ac)
+```
+Reaction time was affected by whether the targets were blocked or mixed (condition), the target color was different, or whether the answer was correct or not. There was also an interaction of condition and correct/incorrect responses.
+
+ condition | target color | reaction time |  ci
+ ----------|---------|------|------------
+     green |  green  |2694  |  57.76
+     mixed |  green  |2689  |  83.87
+     mixed |  white  |3180  |  82.75
+     white |  white  |3356  |  61.23
+
+
+### correct drt vs missed drts
+```{r}
+drt.ac$condition <- recode_factor(drt.ac$condition,"1" = "practice","2" = "green","3" ="white", "4" = "mixed", .default = "NA")
+
+drt.meanhit <- drt.ac %>%
+  filter(response != -1) %>%
+  dplyr::group_by(subid,condition) %>%
+  dplyr::summarise(mean_ac_hits = mean(response)*100) %>% 
+  filter(condition != "practice", subid != "03", mean_ac_hits > 50)
+
+drthit <- summarySEwithin(drt.meanhit, measurevar ="mean_ac_hits", withinvars = c("condition"), idvar = "subid")
+
+drt.meanac <- drt.ac %>%
+  filter(response != 0) %>%
+  mutate(response = ifelse(response == "-1", 0,1)) %>%
+  dplyr::group_by(subid,condition) %>%
+  dplyr::summarise(mean_ac = mean(response)*100) %>% 
+  filter(condition != "practice", subid != "03")
+
+drtac <- summarySEwithin(drt.meanac, measurevar ="mean_ac", withinvars = c("condition"), idvar = "subid")
+  
+hitplot <- ggplot(drthit, aes(x = condition, y=mean_ac_hits)) +
+  geom_bar(stat = "identity",position = "dodge") + theme_minimal() +
+  my.axis.font + geom_errorbar(width = .25,
+                               aes(ymin=mean_ac_hits-ci, ymax=mean_ac_hits+ci)) +
+  xlab("Condition") + coord_cartesian(ylim = c(65, 75)) +
+  scale_fill_manual(values=myColors) + ylab("Percent Correct (%)") +
+  ggtitle("Hits to the \n DRT \n by Condition")
+hitplot
+
+drt.hit <- lmer(mean_ac_hits~condition+(1|subid),data=drt.meanhit)
+Anova(drt.hit)
+
+
+acplot <- ggplot(drtac, aes(x = condition, y=mean_ac)) +
+  geom_bar(stat = "identity",position = "dodge") + theme_minimal() +
+  my.axis.font + geom_errorbar(width = .25,
+                               aes(ymin=mean_ac-ci, ymax=mean_ac+ci)) +
+  xlab("Condition") + coord_cartesian(ylim = c(45, 65)) +
+  scale_fill_manual(values=myColors) + ylab("Percent Correct (%)") +
+  ggtitle("Accuracy of the \n DRT \n by Condition")
+acplot
+
+drt.ac1 <- lmer(mean_ac~condition+(1|subid),data=drt.meanac)
+Anova(drt.ac1)
+
+```
+Hits to the DRT correctly predicted the steering deviation across the 3 conditions.
+
+### combined steering with drt
+```{r choice drt and steering, results="show"}
+
+drt.clean.choice$condition <- recode_factor(drt.clean.choice$condition,"1" = "practice","2" = "green","3" ="white", "4" = "mixed", .default = "NA")
+drt.clean.choice$response <- recode_factor(drt.clean.choice$response, "1" = "correct", "-1" = "incorrect", "0" = "miss")
+
+drtrt <- summarySEwithin(drt.clean.choice, measurevar ="rt", withinvars = c("condition","response"), idvar = "subid")
+
+drtrt <- drtrt %>% filter(condition != "practice", response != "miss")
+
+rtplot <- ggplot(drtrt, aes(x = condition, y=rt, fill = response)) +
+  geom_bar(stat = "identity", position = "dodge") + theme_minimal() +
+  my.axis.font + geom_errorbar(position=position_dodge(.9), width = .25,
+                               aes(ymin=rt-ci, ymax=rt+ci)) +
+  xlab("Condition") + coord_cartesian(ylim = c(600, 750)) + ylab("Reaction Time (ms)") +
+  ggtitle("Reaction Times of the \n DRT \n by Condition and Response")
+rtplot
+
+drt.rt <- lmer(rt~condition*response*mean.dev+(1|subid),data=drt.clean.choice)
+Anova(drt.rt)
+
+```
+
+condition| response |rt      |    ci
+ ------|----------|----------|----------
+ green |  correct | 685   | 18
+ green |incorrect | 657   | 20
+ mixed |  correct | 696   | 18
+ mixed |incorrect | 670   | 19
+ white | correct  | 696   | 16
+ white |incorrect | 672   | 18
+ 
+
+Incorrect responses (where the participant responded to the light more than once) were faster on average than correct responses. The difficulty (condition) also affected reaction times. In addition, there was a difficulty (condition) by response interaction. We can see the effect of difficulty on steering below.
+
+```{r choice drt and steering 2}
+
+drtrt <- summarySEwithin(drt.clean.choice, measurevar ="mean.dev", withinvars = c("condition"), idvar = "subid")
+
+drtrt <- drtrt %>% filter(condition != "practice")
+
+rtplot <- ggplot(drtrt, aes(x = condition, y=mean.dev)) +
+  geom_bar(stat = "identity", position = "dodge") + theme_minimal() +
+  my.axis.font + geom_errorbar(position=position_dodge(.9), width = .25,
+                               aes(ymin=mean.dev-ci, ymax=mean.dev+ci)) +
+  xlab("Condition") + coord_cartesian(ylim = c(5, 20)) + ylab("Degrees Deviation") +
+  ggtitle("Mean Steering Deviation")
+rtplot
+
+drt.rt <- lmer(mean.dev~condition+(1|subid),data=drt.clean.choice)
+Anova(drt.rt)
+```
+
+condition| mean.dev|ci
+---------|---------|-----
+green | 16.13 | 0.60
+mixed | 11.73 | 0.27
+white | 11.46 | 0.22
+
+
+Alone, the effects of the difficulty of the visual task changed the steering deviation so that (1) at the easiest difficulty, steering was the worst (2) at the highest difficulty, steering was the best, and (3) when participants didn't know whether to expect easy or difficult trials, steering was in between. In this case, participants may have been overloaded for the 3 tasks, and so priority could be given to a task that they thought they could complete. 
+
+```{r results="show"}
+clean.choiceac %>%
+  group_by(subid, condition) %>%
+  dplyr::summarise(trials_completed = n())
+```
+

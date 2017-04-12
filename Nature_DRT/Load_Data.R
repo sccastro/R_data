@@ -5,64 +5,28 @@ require(plyr)
 require(dplyr)
 require(lme4)
 require(ggplot2)
-require(TeachingDemos)
-library(splitstackshape)
+require(tidyr)
 
 # My plot config ----------------------------------------------------------
 
 my.axis.font<-theme(axis.title.x = element_text(size=18), axis.title.y = element_text(size=18),
                     axis.text.x = element_text(size=18), axis.text.y = element_text(size=18), 
-                    plot.title=element_text(size=18,face="bold"),
+                    plot.title=element_text(size=18,face="bold", hjust = .5),
                     legend.title=element_text(size=14),legend.text=element_text(size=14))
 
 
 
 # Functions ---------------------------------------------------------------
-ExtractDRT <- function(x) {
-  filepath <- getwd()
-  setwd(filepath)
-  
-  dirs <- list.dirs(path = x, full.names = TRUE) #get directories
-  files <- list.files(path=dirs, pattern="*.txt", full.names=T, recursive=F) #get files
-  subids1 <- regmatches(files, regexpr("1\\d{3}", files)) #get subject ids
-  subids <- substr(subids1, 2,3) #get just the id number
-  condition1 <- as.character(lapply(strsplit(files, "_"), "[",4)) #get conditions
-  condition <- substr(condition1, 4,4) #get just the one number
-    
-  for (i in 1:length(files)) {
-    drts <- readLines(files[i])
-    matches <- regexpr("^DRT.*$", drts)
-    drts <- regmatches(drts, matches)
-    drts <- drts[drts != ""]
-    dat <- cSplit(data.frame(drts),"drts", ",")
-    dat <- select(dat, rt = drts_4, s2 = drts_5, s1 = drts_6, R = drts_7, response = drts_8)
-    infile <- dat
-    infile$subids <- as.factor(subids[i])
-    infile$condition <- as.factor(condition[i])
-    
-    if(!exists("drt.data")) {
-      drt.data <- infile
-    }
-    else {
-      drt.data <- rbind(drt.data,infile)
-    }
-  }
-  return(drt.data)
-}
 
-#Combine .csv files
 
-CombineData <- function(dir) {
+CombineData <- function() {
 
   filepath <- getwd()
   setwd(filepath)
-  
-dirs <- list.dirs(path = dir, full.names = TRUE) #get directories
-files <- list.files(path=dirs, pattern="*.csv", full.names=T, recursive=F)
-subids <- regmatches(files, regexpr("1\\d{3}", files))
-condition1 <- as.character(lapply(strsplit(files, "_"), "[",4))
-condition <- substr(condition1, 4,4)
 
+files <- list.files(path="DRT_all", pattern="*.csv", full.names=T, recursive=FALSE)
+subids <- regmatches(files, regexpr("\\d{3}", files))
+condition <- as.character(lapply(strsplit(files, "_"), "[",4))
 
 for (i in 1:length(files)) {
   infile <- read.csv(files[i])
@@ -262,3 +226,15 @@ dprime = function(data) {
   return(dprime_score)
 }
 
+
+# Calculate A' ------------------------------------------------------------
+
+Getaprime = function(data, hitrate, farate) {
+  require(dplyr)
+  aprimescore = ifelse(data$hitrate >= data$farate, 
+                       .5 + ((data$hitrate - data$farate)*(1 + data$hitrate - data$farate))/(4*data$hitrate *(1-data$farate)),
+                       .5 - ((data$farate - data$hitrate)*(1+data$farate-data$hitrate))/(4*data$farate)*(1-data$hitrate))
+  
+  data$aprimescore <- aprimescore
+  return(data)
+}

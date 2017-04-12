@@ -20,6 +20,14 @@ my.axis.font<-theme(axis.title.x = element_text(size=18), axis.title.y = element
 
 # Functions ---------------------------------------------------------------
 
+# Get Value
+
+getValue <- function(x, data) {
+  tmp <- data %>%
+    filter(between(x, tlow, tup))
+  return(tmp$targcol)
+}
+
 #Combine DRT files
 ExtractDRT <- function(topdir) {
   filepath <- getwd()
@@ -42,7 +50,7 @@ ExtractDRT <- function(topdir) {
     drts <- regmatches(drts, matches)
     drts <- drts[drts != ""]
     dat <- cSplit(data.frame(drts),"drts", ",")
-    dat <- select(dat, rt = drts_4, s2 = drts_5, s1 = drts_6, R = drts_7, response = drts_8)
+    dat <- dplyr::select(dat, UTC = drts_2, time = drts_3, rt = drts_4, s2 = drts_5, s1 = drts_6, R = drts_7, response = drts_8)
     infile <- dat
     infile$subid <- as.factor(subids[i])
     infile$condition <- as.factor(condition[i])
@@ -83,7 +91,7 @@ ExtractSteering <- function(topdir) {
     matches <- regexpr("^Follow.*$", drts)
     drts <- regmatches(drts, matches)
     dat <- cSplit(data.frame(drts),"drts", ",")
-    dat <- select(dat, ballpos = drts_3, cursorpos = drts_4)
+    dat <- dplyr::select(dat, ballpos = drts_3, cursorpos = drts_4)
     infile <- dat
     infile$subid <- as.factor(subids[i])
     infile$condition <- as.factor(condition[i])
@@ -314,4 +322,8 @@ dprime = function(data) {
   
   return(dprime_score)
 }
+
+
+# Calculate A' ------------------------------------------------------------
+
 
